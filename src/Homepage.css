@@ -1,0 +1,28 @@
+body, .homepage-bg {
+  background: linear-gradient(135deg, #e0f7fa 0%, #f8fffc 100%);
+}
+
+.homepage-card {
+  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.08);
+  border-radius: 18px;
+  padding: 32px 16px;
+  background: #fff;
+}
+
+@media (max-width: 768px) {
+  .homepage-card {
+    padding: 16px 4px;
+  }
+  .ant-typography, .ant-btn {
+    font-size: 18px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .homepage-card {
+    padding: 8px 2px;
+  }
+  .ant-typography, .ant-btn {
+    font-size: 16px !important;
+  }
+} 
