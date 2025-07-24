@@ -3,6 +3,7 @@ import { Card, Typography, Table, DatePicker, Select, Row, Col, Tag, message } f
 import axios from 'axios';
 import dayjs from 'dayjs';
 import API_BASE_URL from './config/api';
+import Report from './Report';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -142,6 +143,7 @@ const Kitchen = () => {
         </Card>
       )}
       <Card>
+        <Report />
         <Title level={4} style={{ marginBottom: 8 }}>Báo cáo tổng công, tổng tiền từng người trong tháng</Title>
         <Table
           columns={[

@@ -229,7 +229,7 @@ const Dashboard = () => {
         render: (_, record) => {
           const past = isPastCutoff(record.date, record.type);
           if (past) return <span style={{ color: '#888' }}>Đã quá giờ hủy ăn</span>;
-          if (isCancel(record.date, record.type)) return <span style={{ color: '#888' }}>Đã đăng ký hủy, bấm "Đồng ý ăn" để ăn lại</span>;
+          if (isCancel(record.date, record.type)) return <span style={{ color: '#888' }}>Đã đăng ký hủy, bấm "Đồng ý ăn" để đăng kí ăn lại</span>;
           return null;
         },
       },

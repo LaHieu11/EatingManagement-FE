@@ -15,10 +15,7 @@ const Homepage = () => {
           <Card className="homepage-card" bordered={false}>
             <div style={{ textAlign: 'center', marginBottom: 32 }}>
               <SmileOutlined style={{ fontSize: 48, color: '#52c41a' }} />
-              <Title level={1} style={{ fontSize: 40, margin: '16px 0 0 0', color: '#222' }}>Hệ thống Quản lý Suất ăn Cơ quan</Title>
-              <Paragraph style={{ fontSize: 22, color: '#555', margin: '16px 0' }}>
-                Đẹp trai số 1 thế giới
-              </Paragraph>
+              <Title level={1} style={{ fontSize: 40, margin: '16px 0 0 0', color: '#222' }}>Hệ thống Quản lý Suất ăn Cơ quan xã Lương Minh</Title>
               <Paragraph style={{ fontSize: 18, color: '#666' }}>
                 Đăng ký, quản lý và tổng hợp suất ăn cho toàn thể cán bộ nhân viên một cách nhanh chóng, minh bạch và tiện lợi.
               </Paragraph>
