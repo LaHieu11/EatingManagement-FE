@@ -1,15 +1,67 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Typography, Table, Tag, Row, Col, Button, message, Modal } from 'antd';
+import { Card, Typography, Table, Tag, Row, Col, Button, message, Modal, DatePicker } from 'antd';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import API_BASE_URL from './config/api';
 
 const { Title, Text } = Typography;
 
+// Đặt ActivityLog lên đầu file để dễ quản lý và debug
+const ActivityLog = ({ userId }) => {
+  console.log('ActivityLog render, userId:', userId);
+  const [logs, setLogs] = useState([]);
+  const [from, setFrom] = useState();
+  const [to, setTo] = useState();
+
+  const fetchLogs = () => {
+    if (userId) {
+      let url = `${API_BASE_URL}/users/activity-log?userId=${userId}`;
+      if (from) url += `&from=${from.format('YYYY-MM-DD')}`;
+      if (to) url += `&to=${to.format('YYYY-MM-DD')}`;
+      console.log('Gọi API:', url);
+      axios.get(url)
+        .then(res => {
+          console.log('Activity log data:', res.data);
+          setLogs(res.data);
+        })
+        .catch((err) => {
+          console.error('Lỗi tải lịch sử hoạt động:', err);
+          message.error('Không thể tải lịch sử hoạt động');
+        });
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+    // eslint-disable-next-line
+  }, [userId]);
+
+  const columns = [
+    { title: 'Hành động', dataIndex: 'action', key: 'action' },
+    { title: 'Chi tiết', dataIndex: 'detail', key: 'detail' },
+    { title: 'Thời gian', dataIndex: 'createdAt', key: 'createdAt', render: d => new Date(d).toLocaleString('vi-VN') },
+  ];
+
+  return (
+    <Card style={{ maxWidth: 900, margin: 'auto', marginTop: 32 }}>
+      <Title level={4}>Lịch sử hoạt động của bạn</Title>
+      <div style={{ marginBottom: 16 }}>
+        <span>Lọc theo ngày: </span>
+        <DatePicker value={from} onChange={setFrom} style={{ marginRight: 8 }} placeholder="Từ ngày" />
+        <DatePicker value={to} onChange={setTo} style={{ marginRight: 8 }} placeholder="Đến ngày" />
+        <Button type="primary" onClick={fetchLogs}>Lọc</Button>
+      </div>
+      <Table columns={columns} dataSource={Array.isArray(logs) ? logs : []} rowKey="_id" size="small" pagination={{ pageSize: 10, responsive: true }} scroll={{ x: true }} />
+    </Card>
+  );
+};
+
 const Dashboard = () => {
   const [user, setUser] = useState(null);
+  const [userReady, setUserReady] = useState(false);
   const [registrations, setRegistrations] = useState([]);
   const [meals, setMeals] = useState([]);
+  const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const token = localStorage.getItem('token');
 
@@ -25,11 +77,13 @@ const Dashboard = () => {
         const userInfo = localStorage.getItem('user');
         if (userInfo) {
           setUser(JSON.parse(userInfo));
+          setUserReady(true);
           console.log('User info:', userInfo);
         } else {
           const payload = JSON.parse(atob(token.split('.')[1]));
-          console.log('Payload:', payload);
           setUser(payload);
+          setUserReady(true);
+          console.log('Payload:', payload);
         }
         const regRes = await axios.get(`${API_BASE_URL}/meals/my-registrations`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -50,6 +104,20 @@ const Dashboard = () => {
     fetchData();
     // eslint-disable-next-line
   }, []);
+
+  useEffect(() => {
+    if (user && user._id) {
+      let url = `${API_BASE_URL}/users/activity-log?userId=${user._id}`;
+      console.log('Gọi API trực tiếp trong Dashboard:', url);
+      axios.get(url)
+        .then(res => {
+          console.log('Activity log data trực tiếp:', res.data);
+        })
+        .catch((err) => {
+          console.error('Lỗi tải lịch sử hoạt động trực tiếp:', err);
+        });
+    }
+  }, [user]);
 
   // Kiểm tra user đã đăng ký hủy bữa ăn này chưa (so sánh date và type)
   const isCancel = (date, type) => {
@@ -251,6 +319,9 @@ const Dashboard = () => {
     );
   };
 
+  console.log('Dashboard component render');
+  console.log('userReady:', userReady, 'user:', user);
+
   return (
     <Row gutter={[16, 16]} justify="center">
       <Col xs={24} md={8}>
@@ -262,6 +333,7 @@ const Dashboard = () => {
               <Text strong>Email:</Text> <Text>{user.email || '-'}</Text><br />
               <Text strong>Giới tính:</Text> <Text>{user.gender === 'male' ? 'Nam' : user.gender === 'female' ? 'Nữ' : 'Khác'}</Text><br />
               <Text strong>Vai trò:</Text> <Text>{user.role === 'admin' ? 'Quản trị viên' : user.role === 'kitchen' ? 'Nhà bếp' : 'Thành viên'}</Text>
+              <ActivityLog userId={user && user._id} />
             </>
           ) : <Text>Đang tải...</Text>}
         </Card>
