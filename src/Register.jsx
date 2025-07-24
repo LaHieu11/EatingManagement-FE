@@ -9,7 +9,7 @@ const Register = () => {
   const [form] = Form.useForm();
   const [otpForm] = Form.useForm();
   const [step, setStep] = useState(1); // 1: register, 2: otp
-  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
   // Xử lý đăng ký
@@ -18,9 +18,9 @@ const Register = () => {
     setLoading(true);
     try {
       await axios.post(`${API_BASE_URL}/users/register`, values);
-      setPhone(values.phone);
+      setEmail(values.email);
       setStep(2);
-      message.success('Đăng ký thành công! Vui lòng nhập OTP gửi về số điện thoại.');
+      message.success('Đăng ký thành công! Vui lòng nhập OTP gửi về email.');
     } catch (err) {
       message.error(err.response?.data?.message || 'Đăng ký thất bại');
     } finally {
@@ -32,7 +32,7 @@ const Register = () => {
   const onFinishOTP = async (values) => {
     setLoading(true);
     try {
-      await axios.post(`${API_BASE_URL}/users/verify-otp`, { phone, otp: values.otp });
+      await axios.post(`${API_BASE_URL}/users/verify-otp`, { email, otp: values.otp });
       message.success('Xác thực OTP thành công! Bạn có thể đăng nhập.');
       setStep(1);
       form.resetFields();
@@ -49,7 +49,7 @@ const Register = () => {
   const handleResendOTP = async () => {
     setLoading(true);
     try {
-      await axios.post(`${API_BASE_URL}/users/resend-otp`, { phone });
+      await axios.post(`${API_BASE_URL}/users/resend-otp`, { email });
       message.success('Đã gửi lại OTP thành công!');
     } catch (err) {
       message.error(err.response?.data?.message || 'Gửi lại OTP thất bại');

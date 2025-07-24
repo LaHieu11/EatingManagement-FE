@@ -10,6 +10,7 @@ import Admin from './Admin';
 import Register from './Register';
 import Homepage from './Homepage';
 import Kitchen from './Kitchen';
+import ForgotPassword from './ForgotPassword';
 import { LogoutOutlined } from '@ant-design/icons';
 
 function LogoutButton() {
@@ -40,6 +41,7 @@ function App() {
         <Layout.Content style={{ padding: '16px', maxWidth: 1200, margin: 'auto', width: '100%' }}>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/" element={<Homepage />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/register-meal" element={<MealRegister />} />

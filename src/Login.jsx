@@ -48,6 +48,8 @@ const Login = () => {
           </Form.Item>
         </Form>
         <a href="/register">Đăng ký</a>
+        <br />
+        <a href="/forgot-password">Quên mật khẩu?</a>
       </Card>
     </div>
   );
