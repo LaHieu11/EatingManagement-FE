@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Typography, Table, DatePicker, Select, Row, Col, Tag, message } from 'antd';
 import axios from 'axios';
 import dayjs from 'dayjs';
+import API_BASE_URL from './config/api';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -19,7 +20,7 @@ const Kitchen = () => {
   useEffect(() => {
     const fetchMeals = async () => {
       try {
-        const res = await axios.get('http://localhost:3000/meals/list', {
+        const res = await axios.get(`${API_BASE_URL}/meals/list`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setMeals(res.data);
@@ -41,7 +42,7 @@ const Kitchen = () => {
       const date = meal.date;
       const type = meal.type;
       console.log('DEBUG fetchSummary:', { mealId, date, type });
-      const res = await axios.get(`http://localhost:3000/meals/kitchen/summary?date=${date}&type=${type}`, {
+      const res = await axios.get(`${API_BASE_URL}/meals/kitchen/summary?date=${date}&type=${type}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSummary({
@@ -60,7 +61,7 @@ const Kitchen = () => {
   // Lấy báo cáo tổng công, tổng tiền từng người trong tháng
   const fetchReport = async (month) => {
     try {
-      const res = await axios.get(`http://localhost:3000/meals/report/${month.year()}/${month.month() + 1}`, {
+      const res = await axios.get(`${API_BASE_URL}/meals/report/${month.year()}/${month.month() + 1}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setReport(res.data);

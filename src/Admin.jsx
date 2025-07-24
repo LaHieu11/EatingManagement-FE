@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Tabs, Card, Typography, Table, Button, Form, DatePicker, Select, message, Tag, Input, Row, Col } from 'antd';
 import axios from 'axios';
 import dayjs from 'dayjs';
+import API_BASE_URL from './config/api';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -23,7 +24,7 @@ const Admin = () => {
   const fetchMeals = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:3000/meals/list', {
+      const res = await axios.get(`${API_BASE_URL}/meals/list`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMeals(res.data);
@@ -37,7 +38,7 @@ const Admin = () => {
   // Lấy log hoạt động
   const fetchLogs = async () => {
     try {
-      const res = await axios.get('http://localhost:3000/users/activity-log', {
+      const res = await axios.get(`${API_BASE_URL}/users/activity-log`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setLogs(res.data);
@@ -49,7 +50,7 @@ const Admin = () => {
   // Lấy báo cáo
   const fetchReport = async (month) => {
     try {
-      const res = await axios.get(`http://localhost:3000/meals/report/${month.year()}/${month.month() + 1}`, {
+      const res = await axios.get(`${API_BASE_URL}/meals/report/${month.year()}/${month.month() + 1}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setReport(res.data);
@@ -62,7 +63,7 @@ const Admin = () => {
   const fetchRegistrations = async (mealId) => {
     setLoading(true);
     try {
-      const res = await axios.get(`http://localhost:3000/meals/registrations/${mealId}`, {
+      const res = await axios.get(`${API_BASE_URL}/meals/registrations/${mealId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setRegistrations(res.data);
@@ -84,7 +85,7 @@ const Admin = () => {
       } else {
         date = selectedDate.hour(18).minute(0).second(0).millisecond(0).toISOString();
       }
-      const res = await axios.get(`http://localhost:3000/meals/kitchen/summary?date=${date}&type=${selectedType}`, {
+      const res = await axios.get(`${API_BASE_URL}/meals/kitchen/summary?date=${date}&type=${selectedType}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSummary({
@@ -110,7 +111,7 @@ const Admin = () => {
   // Tạo bữa ăn mới
   const onCreateMeal = async (values) => {
     try {
-      await axios.post('http://localhost:3000/meals/create', {
+      await axios.post(`${API_BASE_URL}/meals/create`, {
         date: values.date.toISOString(),
         type: values.type,
       }, {
@@ -126,7 +127,7 @@ const Admin = () => {
   // Xác nhận đăng ký ăn
   const handleConfirm = async (registrationId) => {
     try {
-      await axios.put(`http://localhost:3000/meals/confirm/${registrationId}`, {}, {
+      await axios.put(`${API_BASE_URL}/meals/confirm/${registrationId}`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       message.success('Đã xác nhận!');

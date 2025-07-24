@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Typography, Table, Button, Tag, message } from 'antd';
 import axios from 'axios';
 import dayjs from 'dayjs';
+import API_BASE_URL from './config/api';
 
 const { Title } = Typography;
 
@@ -16,12 +17,12 @@ const MealRegister = () => {
       setLoading(true);
       try {
         // Lấy danh sách bữa ăn
-        const mealRes = await axios.get('http://localhost:3000/meals/list', {
+        const mealRes = await axios.get(`${API_BASE_URL}/meals/list`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setMeals(mealRes.data);
         // Lấy lịch sử đăng ký hủy của user
-        const regRes = await axios.get('http://localhost:3000/meals/my-registrations', {
+        const regRes = await axios.get(`${API_BASE_URL}/meals/my-registrations`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setRegistrations(regRes.data);
@@ -44,12 +45,12 @@ const MealRegister = () => {
 
   const handleCancel = async (mealId) => {
     try {
-      await axios.post('http://localhost:3000/meals/cancel', { mealId }, {
+      await axios.post(`${API_BASE_URL}/meals/cancel`, { mealId }, {
         headers: { Authorization: `Bearer ${token}` },
       });
       message.success('Đã đăng ký hủy ăn!');
       // Refresh data
-      const regRes = await axios.get('http://localhost:3000/meals/my-registrations', {
+      const regRes = await axios.get(`${API_BASE_URL}/meals/my-registrations`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setRegistrations(regRes.data);
@@ -60,12 +61,12 @@ const MealRegister = () => {
 
   const handleUncancel = async (registrationId) => {
     try {
-      await axios.delete(`http://localhost:3000/meals/cancel/${registrationId}`, {
+      await axios.delete(`${API_BASE_URL}/meals/cancel/${registrationId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       message.success('Đã bỏ đăng ký hủy ăn!');
       // Refresh data
-      const regRes = await axios.get('http://localhost:3000/meals/my-registrations', {
+      const regRes = await axios.get(`${API_BASE_URL}/meals/my-registrations`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setRegistrations(regRes.data);

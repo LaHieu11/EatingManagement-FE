@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Typography, Table, Tag, Row, Col, Button, message, Modal } from 'antd';
 import axios from 'axios';
 import dayjs from 'dayjs';
+import API_BASE_URL from './config/api';
 
 const { Title, Text } = Typography;
 
@@ -30,12 +31,12 @@ const Dashboard = () => {
           console.log('Payload:', payload);
           setUser(payload);
         }
-        const regRes = await axios.get('http://localhost:3000/meals/my-registrations', {
+        const regRes = await axios.get(`${API_BASE_URL}/meals/my-registrations`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         console.log('Registrations loaded:', regRes.data);
         setRegistrations(regRes.data);
-        const mealRes = await axios.get('http://localhost:3000/meals/list', {
+        const mealRes = await axios.get(`${API_BASE_URL}/meals/list`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         console.log('Meals loaded:', mealRes.data);
@@ -100,12 +101,12 @@ const Dashboard = () => {
       onOk: async () => {
         console.log('Modal onOk called, about to call axios.post');
         try {
-          const res = await axios.post('http://localhost:3000/meals/cancel', { date: new Date(date).toISOString(), type }, {
+          const res = await axios.post(`${API_BASE_URL}/meals/cancel`, { date: new Date(date).toISOString(), type }, {
             headers: { Authorization: `Bearer ${token}` },
           });
           console.log('API response:', res);
           message.success('Đã đăng ký hủy ăn!');
-          const regRes = await axios.get('http://localhost:3000/meals/my-registrations', {
+          const regRes = await axios.get(`${API_BASE_URL}/meals/my-registrations`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           setRegistrations(regRes.data);
@@ -137,11 +138,11 @@ const Dashboard = () => {
       cancelText: 'Hủy',
       onOk: async () => {
         try {
-          await axios.delete(`http://localhost:3000/meals/cancel/${regId}`, {
+          await axios.delete(`${API_BASE_URL}/meals/cancel/${regId}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           message.success('Đã đồng ý ăn lại!');
-          const regRes = await axios.get('http://localhost:3000/meals/my-registrations', {
+          const regRes = await axios.get(`${API_BASE_URL}/meals/my-registrations`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           setRegistrations(regRes.data);

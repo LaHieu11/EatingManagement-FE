@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Form, Input, Button, Typography, message, Card } from 'antd';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import API_BASE_URL from './config/api';
 
 const { Title } = Typography;
 
@@ -12,7 +13,7 @@ const Login = () => {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      const res = await axios.post('http://localhost:3000/users/login', values);
+      const res = await axios.post(`${API_BASE_URL}/users/login`, values);
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
       message.success('Đăng nhập thành công!');

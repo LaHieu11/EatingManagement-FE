@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, Typography, message, Card, Select } from 'antd';
 import axios from 'axios';
+import API_BASE_URL from './config/api';
 
 const { Title } = Typography;
 
@@ -16,10 +17,10 @@ const Register = () => {
     console.log('Register payload:', values);
     setLoading(true);
     try {
-      await axios.post('http://localhost:3000/users/register', values);
+      await axios.post(`${API_BASE_URL}/users/register`, values);
       setPhone(values.phone);
       setStep(2);
-      message.success('Đăng ký thành công! Vui lòng nhập OTP gửi về số điện thoại. (Xem console backend nếu demo)');
+      message.success('Đăng ký thành công! Vui lòng nhập OTP gửi về số điện thoại.');
     } catch (err) {
       message.error(err.response?.data?.message || 'Đăng ký thất bại');
     } finally {
@@ -31,7 +32,7 @@ const Register = () => {
   const onFinishOTP = async (values) => {
     setLoading(true);
     try {
-      await axios.post('http://localhost:3000/users/verify-otp', { phone, otp: values.otp });
+      await axios.post(`${API_BASE_URL}/users/verify-otp`, { phone, otp: values.otp });
       message.success('Xác thực OTP thành công! Bạn có thể đăng nhập.');
       setStep(1);
       form.resetFields();
@@ -41,6 +42,19 @@ const Register = () => {
     } finally {
       setLoading(false);
       window.location.href = '/login';
+    }
+  };
+
+  // Gửi lại OTP
+  const handleResendOTP = async () => {
+    setLoading(true);
+    try {
+      await axios.post(`${API_BASE_URL}/users/resend-otp`, { phone });
+      message.success('Đã gửi lại OTP thành công!');
+    } catch (err) {
+      message.error(err.response?.data?.message || 'Gửi lại OTP thất bại');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -118,6 +132,11 @@ const Register = () => {
             <Form.Item>
               <Button type="primary" htmlType="submit" block loading={loading}>
                 Xác thực OTP
+              </Button>
+            </Form.Item>
+            <Form.Item>
+              <Button type="link" onClick={handleResendOTP} loading={loading} block>
+                Gửi lại OTP
               </Button>
             </Form.Item>
           </Form>
