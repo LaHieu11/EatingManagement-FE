@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Tabs, Card, Typography, Table, Button, Form, DatePicker, Select, message, Tag, Input, Row, Col } from 'antd';
+import { Tabs, Card, Typography, Table, Button, Form, DatePicker, Select, message, Tag, Input, Row, Col, Modal, Space, Popconfirm } from 'antd';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import API_BASE_URL from './config/api';
@@ -27,6 +27,16 @@ const Admin = () => {
   const [logYear, setLogYear] = useState(dayjs().year());
   const [logDate, setLogDate] = useState(dayjs());
   const [userList, setUserList] = useState([]);
+  
+  // State cho quản lý người dùng
+  const [allUsers, setAllUsers] = useState([]);
+  const [userModalVisible, setUserModalVisible] = useState(false);
+  const [passwordModalVisible, setPasswordModalVisible] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  
+  // State cho lịch sử xuất báo cáo
+  const [exportHistory, setExportHistory] = useState([]);
 
   // Lấy danh sách bữa ăn
   const fetchMeals = async () => {
@@ -133,6 +143,8 @@ const Admin = () => {
     fetchMeals();
     fetchAllLogs();
     fetchReport(reportMonth);
+    fetchAllUsers();
+    fetchExportHistory();
     // eslint-disable-next-line
   }, []);
 
@@ -154,6 +166,86 @@ const Admin = () => {
       fetchMeals();
     } catch (err) {
       message.error(err.response?.data?.message || 'Tạo bữa ăn thất bại');
+    }
+  };
+
+  // Lấy danh sách tất cả người dùng
+  const fetchAllUsers = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/users/all`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAllUsers(res.data);
+    } catch (err) {
+      message.error('Không thể tải danh sách người dùng');
+    }
+  };
+
+  // Lấy lịch sử xuất báo cáo
+  const fetchExportHistory = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/users/export-history`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setExportHistory(res.data);
+    } catch (err) {
+      message.error('Không thể tải lịch sử xuất báo cáo');
+    }
+  };
+
+  // Tạo người dùng mới
+  const onCreateUser = async (values) => {
+    try {
+      await axios.post(`${API_BASE_URL}/users/create`, values, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      message.success('Tạo người dùng thành công!');
+      setUserModalVisible(false);
+      fetchAllUsers();
+    } catch (err) {
+      message.error(err.response?.data?.message || 'Tạo người dùng thất bại');
+    }
+  };
+
+  // Khóa/mở khóa tài khoản
+  const handleToggleStatus = async (userId) => {
+    try {
+      const res = await axios.put(`${API_BASE_URL}/users/toggle-status/${userId}`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      message.success(res.data.message);
+      fetchAllUsers();
+    } catch (err) {
+      message.error(err.response?.data?.message || 'Thao tác thất bại');
+    }
+  };
+
+  // Đổi mật khẩu
+  const handleChangePassword = async () => {
+    try {
+      await axios.put(`${API_BASE_URL}/users/change-password/${selectedUser._id}`, 
+        { newPassword }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      message.success('Đổi mật khẩu thành công!');
+      setPasswordModalVisible(false);
+      setNewPassword('');
+      setSelectedUser(null);
+    } catch (err) {
+      message.error(err.response?.data?.message || 'Đổi mật khẩu thất bại');
+    }
+  };
+
+  // Xóa người dùng
+  const handleDeleteUser = async (userId) => {
+    try {
+      await axios.delete(`${API_BASE_URL}/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      message.success('Đã xóa người dùng');
+      fetchAllUsers();
+    } catch (err) {
+      message.error(err.response?.data?.message || 'Xóa người dùng thất bại');
     }
   };
 
@@ -185,7 +277,23 @@ const Admin = () => {
   // Cột cho bảng log hoạt động
   const logColumns = [
     { title: 'Người dùng', dataIndex: ['user', 'fullName'], key: 'user', render: (v, r) => v || r.user.username },
-    { title: 'Hành động', dataIndex: 'action', key: 'action' },
+    { 
+      title: 'Hành động', 
+      dataIndex: 'action', 
+      key: 'action',
+      render: (action) => {
+        switch(action) {
+          case 'cancel_meal':
+            return 'Đăng ký hủy ăn';
+          case 'uncancel_meal':
+            return 'Đăng ký ăn lại';
+          case 'register_meal':
+            return 'Đăng ký ăn';
+          default:
+            return action;
+        }
+      }
+    },
     { title: 'Chi tiết', dataIndex: 'detail', key: 'detail' },
     { title: 'Thời gian', dataIndex: 'createdAt', key: 'createdAt', render: (d) => dayjs(d).format('DD/MM/YYYY HH:mm') },
   ];
@@ -197,17 +305,85 @@ const Admin = () => {
     { title: 'Số suất ăn', dataIndex: 'count', key: 'count' },
   ];
 
+  // Cột cho bảng quản lý người dùng
+  const userColumns = [
+    { title: 'Tên', dataIndex: 'fullName', key: 'fullName', render: (v, r) => v || r.username },
+    { title: 'Username', dataIndex: 'username', key: 'username' },
+    { title: 'Email', dataIndex: 'email', key: 'email' },
+    { title: 'Vai trò', dataIndex: 'role', key: 'role', render: (role) => {
+      switch(role) {
+        case 'admin': return <Tag color="red">Admin</Tag>;
+        case 'kitchen': return <Tag color="orange">Kitchen</Tag>;
+        case 'user': return <Tag color="blue">User</Tag>;
+        default: return role;
+      }
+    }},
+    { title: 'Trạng thái', dataIndex: 'isActive', key: 'isActive', render: (isActive) => 
+      isActive ? <Tag color="red">Đã khóa</Tag> : <Tag color="green">Đang hoạt động</Tag>
+    },
+    { title: 'Ngày tạo', dataIndex: 'createdAt', key: 'createdAt', render: (d) => dayjs(d).format('DD/MM/YYYY') },
+    { title: 'Hành động', key: 'action', render: (_, record) => (
+      <Space>
+        <Button 
+          size="small" 
+          type={record.isActive ? "danger" : "primary"}
+          onClick={() => handleToggleStatus(record._id)}
+        >
+          {record.isActive ? 'Mở khóa' : 'Khóa'}
+        </Button>
+        <Button 
+          size="small" 
+          type="default"
+          onClick={() => {
+            setSelectedUser(record);
+            setPasswordModalVisible(true);
+          }}
+        >
+          Đổi MK
+        </Button>
+        {record.role !== 'admin' && (
+          <Popconfirm
+            title="Bạn có chắc muốn xóa người dùng này?"
+            onConfirm={() => handleDeleteUser(record._id)}
+            okText="Có"
+            cancelText="Không"
+          >
+            <Button size="small" danger>Xóa</Button>
+          </Popconfirm>
+        )}
+      </Space>
+    )},
+  ];
+
+  // Cột cho bảng lịch sử xuất báo cáo
+  const exportHistoryColumns = [
+    { title: 'Người dùng', dataIndex: ['user', 'fullName'], key: 'user', render: (v, r) => v || r.user?.username || 'Admin' },
+    { title: 'Hành động', dataIndex: 'action', key: 'action', render: (action) => 'Xuất báo cáo' },
+    { title: 'Chi tiết', dataIndex: 'detail', key: 'detail' },
+    { title: 'Thời gian', dataIndex: 'createdAt', key: 'createdAt', render: (d) => dayjs(d).format('DD/MM/YYYY HH:mm') },
+  ];
+
   return (
     <Card style={{ maxWidth: 1200, margin: 'auto' }}>
       <Title level={3}>Admin Panel</Title>
       <Tabs defaultActiveKey="1" type="card">
-        <Tabs.TabPane tab="Tạo bữa ăn mới" key="1">
-          <Form layout="inline" onFinish={onCreateMeal} style={{ marginBottom: 16 }}>
-            <Form.Item name="date" label="Ngày & giờ" rules={[{ required: true, message: 'Chọn ngày giờ' }]}> <DatePicker showTime format="DD/MM/YYYY HH:mm" /> </Form.Item>
-            <Form.Item name="type" label="Bữa" rules={[{ required: true, message: 'Chọn loại bữa' }]}> <Select style={{ minWidth: 100 }}><Option value="lunch">Trưa</Option><Option value="dinner">Tối</Option></Select> </Form.Item>
-            <Form.Item><Button type="primary" htmlType="submit">Tạo bữa ăn</Button></Form.Item>
-          </Form>
-          <Table columns={[{ title: 'Ngày', dataIndex: 'date', key: 'date', render: (d) => dayjs(d).format('DD/MM/YYYY HH:mm') }, { title: 'Bữa', dataIndex: 'type', key: 'type', render: (t) => t === 'lunch' ? 'Trưa' : 'Tối' }]} dataSource={meals} rowKey="_id" size="small" pagination={{ pageSize: 5, responsive: true }} scroll={{ x: true }} />
+        <Tabs.TabPane tab="Quản lý người dùng" key="1">
+          <Button 
+            type="primary" 
+            style={{ marginBottom: 16 }}
+            onClick={() => setUserModalVisible(true)}
+          >
+            Thêm người dùng mới
+          </Button>
+          <Table 
+            columns={userColumns} 
+            dataSource={allUsers} 
+            rowKey="_id" 
+            size="small" 
+            pagination={{ pageSize: 10, responsive: true }} 
+            scroll={{ x: true }}
+            loading={loading}
+          />
         </Tabs.TabPane>
         <Tabs.TabPane tab="Danh sách ăn/hủy ăn" key="2">
           <Row gutter={16} style={{ marginBottom: 16 }}>
@@ -295,7 +471,88 @@ const Admin = () => {
           </div>
           <Table columns={logColumns} dataSource={logs} rowKey="_id" size="small" pagination={{ pageSize: 10, responsive: true }} scroll={{ x: true }} />
         </Tabs.TabPane>
+        <Tabs.TabPane tab="Lịch sử xuất báo cáo" key="6">
+          <Table 
+            columns={exportHistoryColumns} 
+            dataSource={exportHistory} 
+            rowKey="_id" 
+            size="small" 
+            pagination={{ pageSize: 10, responsive: true }} 
+            scroll={{ x: true }}
+          />
+        </Tabs.TabPane>
       </Tabs>
+
+      {/* Modal thêm người dùng mới */}
+      <Modal
+        title="Thêm người dùng mới"
+        visible={userModalVisible}
+        onCancel={() => setUserModalVisible(false)}
+        footer={null}
+      >
+        <Form layout="vertical" onFinish={onCreateUser}>
+          <Form.Item name="username" label="Username" rules={[{ required: true, message: 'Nhập username' }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="fullName" label="Họ tên" rules={[{ required: true, message: 'Nhập họ tên' }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Nhập email' }, { type: 'email', message: 'Email không hợp lệ' }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="password" label="Mật khẩu" rules={[{ required: true, message: 'Nhập mật khẩu' }]}>
+            <Input.Password />
+          </Form.Item>
+          <Form.Item name="role" label="Vai trò" rules={[{ required: true, message: 'Chọn vai trò' }]}>
+            <Select>
+              <Option value="user">User</Option>
+              <Option value="kitchen">Kitchen</Option>
+              <Option value="admin">Admin</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item name="gender" label="Giới tính">
+            <Select>
+              <Option value="male">Nam</Option>
+              <Option value="female">Nữ</Option>
+              <Option value="other">Khác</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item name="phone" label="Số điện thoại">
+            <Input />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit" style={{ marginRight: 8 }}>
+              Tạo người dùng
+            </Button>
+            <Button onClick={() => setUserModalVisible(false)}>
+              Hủy
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Modal đổi mật khẩu */}
+      <Modal
+        title="Đổi mật khẩu"
+        visible={passwordModalVisible}
+        onCancel={() => {
+          setPasswordModalVisible(false);
+          setNewPassword('');
+          setSelectedUser(null);
+        }}
+        onOk={handleChangePassword}
+        okText="Đổi mật khẩu"
+        cancelText="Hủy"
+      >
+        <p>Đổi mật khẩu cho: <strong>{selectedUser?.fullName || selectedUser?.username}</strong></p>
+        <Form.Item label="Mật khẩu mới" required>
+          <Input.Password 
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="Nhập mật khẩu mới"
+          />
+        </Form.Item>
+      </Modal>
     </Card>
   );
 };

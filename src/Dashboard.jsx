@@ -37,7 +37,23 @@ const ActivityLog = ({ userId }) => {
   }, [userId]);
 
   const columns = [
-    { title: 'Hành động', dataIndex: 'action', key: 'action' },
+    { 
+      title: 'Hành động', 
+      dataIndex: 'action', 
+      key: 'action',
+      render: (action) => {
+        switch(action) {
+          case 'cancel_meal':
+            return 'Đăng ký hủy ăn';
+          case 'uncancel_meal':
+            return 'Đăng ký ăn lại';
+          case 'register_meal':
+            return 'Đăng ký ăn';
+          default:
+            return action;
+        }
+      }
+    },
     { title: 'Chi tiết', dataIndex: 'detail', key: 'detail' },
     { title: 'Thời gian', dataIndex: 'createdAt', key: 'createdAt', render: d => new Date(d).toLocaleString('vi-VN') },
   ];
@@ -89,6 +105,14 @@ const Dashboard = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         console.log('Registrations loaded:', regRes.data);
+        console.log('Registrations details:', regRes.data.map(r => ({
+          _id: r._id,
+          date: r.date,
+          type: r.type,
+          isCancel: r.isCancel,
+          user: r.user,
+          dateFormatted: dayjs(r.date).format('YYYY-MM-DD')
+        })));
         setRegistrations(regRes.data);
         const mealRes = await axios.get(`${API_BASE_URL}/meals/list`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -121,7 +145,21 @@ const Dashboard = () => {
 
   // Kiểm tra user đã đăng ký hủy bữa ăn này chưa (so sánh date và type)
   const isCancel = (date, type) => {
-    const result = registrations.some(r => r.date && r.type && dayjs(r.date).isSame(dayjs(date), 'day') && r.type === type);
+    const result = registrations.some(r => {
+      // Chỉ xét các đăng ký có isCancel = true
+      if (!r.isCancel) return false;
+      
+      // So sánh ngày (chỉ phần date, không tính giờ)
+      const regDate = dayjs(r.date).format('YYYY-MM-DD');
+      const mealDate = dayjs(date).format('YYYY-MM-DD');
+      const dateMatch = regDate === mealDate;
+      
+      // So sánh type
+      const typeMatch = r.type === type;
+      
+      return dateMatch && typeMatch;
+    });
+    
     console.log('isCancel check:', {
       date: date,
       type: type,
@@ -129,8 +167,9 @@ const Dashboard = () => {
       registrations: registrations.map(r => ({
         date: r.date,
         type: r.type,
+        isCancel: r.isCancel,
         dateFormatted: dayjs(r.date).format('YYYY-MM-DD'),
-        isSameDay: dayjs(r.date).isSame(dayjs(date), 'day'),
+        dateMatch: dayjs(r.date).format('YYYY-MM-DD') === dayjs(date).format('YYYY-MM-DD'),
         typeMatch: r.type === type
       })),
       result
@@ -140,7 +179,20 @@ const Dashboard = () => {
 
   // Lấy _id của bản ghi MealRegistration tương ứng với meal (date+type)
   const getRegistrationId = (date, type) => {
-    const reg = registrations.find(r => r.date && r.type && dayjs(r.date).isSame(dayjs(date), 'day') && r.type === type);
+    const reg = registrations.find(r => {
+      // Chỉ xét các đăng ký có isCancel = true
+      if (!r.isCancel) return false;
+      
+      // So sánh ngày (chỉ phần date, không tính giờ)
+      const regDate = dayjs(r.date).format('YYYY-MM-DD');
+      const mealDate = dayjs(date).format('YYYY-MM-DD');
+      const dateMatch = regDate === mealDate;
+      
+      // So sánh type
+      const typeMatch = r.type === type;
+      
+      return dateMatch && typeMatch;
+    });
     return reg ? reg._id : null;
   };
 
@@ -341,6 +393,23 @@ const Dashboard = () => {
       <Col xs={24} md={16}>
         <Card>
           <Title level={4}>Đăng ký hủy ăn các bữa sắp tới</Title>
+          {/* Hiển thị banner nếu có bữa ăn đã được đăng ký hủy */}
+          {Object.entries(groupedMeals).some(([day, mealsOfDay]) => 
+            mealsOfDay.some(meal => isCancel(meal.date, meal.type))
+          ) && (
+            <div style={{ 
+              backgroundColor: '#ff4d4f', 
+              color: 'white', 
+              padding: '8px 16px', 
+              borderRadius: '4px', 
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              <span style={{ marginRight: '8px' }}>⚠️</span>
+              Bạn đã đăng ký hủy ăn cho một số bữa trong danh sách này
+            </div>
+          )}
           {Object.keys(groupedMeals).length === 0 ? (
             <div style={{ color: '#888', padding: 24 }}>Không có bữa ăn nào trong 7 ngày tới.</div>
           ) : (

@@ -19,7 +19,7 @@ const Report = () => {
 
   useEffect(() => {
     if (mode === 'personal') {
-      axios.get(`${API_BASE_URL}/users`)
+      axios.get(`${API_BASE_URL}/users/only-users`)
         .then(res => setUsers(res.data))
         .catch(() => setUsers([]));
     }
@@ -40,9 +40,11 @@ const Report = () => {
         params.month = month;
         params.year = year;
       }
+      const token = localStorage.getItem('token');
       const response = await axios.get(`${API_BASE_URL}/users/export-report`, {
         params,
-        responseType: 'blob'
+        responseType: 'blob',
+        headers: { Authorization: `Bearer ${token}` }
       });
       // Xác định tên file
       let ext = format === 'excel' ? 'xlsx' : (format === 'pdf' ? 'pdf' : 'docx');
@@ -54,7 +56,12 @@ const Report = () => {
       link.click();
       link.remove();
     } catch (err) {
-      message.error('Xuất báo cáo thất bại!');
+      console.error('Export error:', err);
+      if (err.response?.status === 401) {
+        message.error('Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn!');
+      } else {
+        message.error(err.response?.data?.message || 'Xuất báo cáo thất bại!');
+      }
     } finally {
       setLoading(false);
     }
@@ -116,7 +123,7 @@ const Report = () => {
           <span>Định dạng: </span>
           <Select value={format} onChange={setFormat} style={{ width: 120 }}>
             <Option value="excel">Excel</Option>
-            {/* <Option value="pdf">PDF</Option> */}
+            <Option value="pdf">PDF</Option>
             <Option value="word">Word</Option>
           </Select>
         </div>
