@@ -19,7 +19,10 @@ const Report = () => {
 
   useEffect(() => {
     if (mode === 'personal') {
-      axios.get(`${API_BASE_URL}/users/only-users`)
+      const token = localStorage.getItem('token');
+      axios.get(`${API_BASE_URL}/users/only-users`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
         .then(res => setUsers(res.data))
         .catch(() => setUsers([]));
     }

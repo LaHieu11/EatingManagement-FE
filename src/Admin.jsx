@@ -13,7 +13,10 @@ const Admin = () => {
   // State cho các tab
   const [meals, setMeals] = useState([]);
   const [registrations, setRegistrations] = useState([]);
-  const [logs, setLogs] = useState([]);
+  // State cho tab "Log hoạt động" (hiển thị tất cả logs)
+  const [allLogs, setAllLogs] = useState([]);
+  // State cho tab "Log hoạt động người dùng" (logs được filter)
+  const [filteredLogs, setFilteredLogs] = useState([]);
   const [report, setReport] = useState([]);
   const [loading, setLoading] = useState(false);
   const [reportMonth, setReportMonth] = useState(dayjs());
@@ -53,8 +56,8 @@ const Admin = () => {
     }
   };
 
-  // Lấy log hoạt động
-  const fetchLogs = async () => {
+  // Lấy log hoạt động cho tab "Log hoạt động người dùng" (có filter)
+  const fetchFilteredLogs = async () => {
     try {
       let params = {};
       if (logUser) params.userId = logUser;
@@ -68,8 +71,11 @@ const Admin = () => {
       } else if (logMode === 'day') {
         params.date = logDate.format('YYYY-MM-DD');
       }
-      const res = await axios.get(`${API_BASE_URL}/users/activity-log`, { params });
-      setLogs(res.data);
+      const res = await axios.get(`${API_BASE_URL}/users/activity-log`, { 
+        params,
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setFilteredLogs(res.data);
     } catch (err) {
       message.error('Không thể tải log hoạt động');
     }
@@ -129,11 +135,13 @@ const Admin = () => {
     }
   };
 
-  // Tab Log hoạt động: fetchLogs chỉ gọi API /users/activity-log không truyền params
+  // Tab Log hoạt động: fetchAllLogs chỉ gọi API /users/activity-log không truyền params
   const fetchAllLogs = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/users/activity-log`);
-      setLogs(res.data);
+      const res = await axios.get(`${API_BASE_URL}/users/activity-log`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAllLogs(res.data);
     } catch (err) {
       message.error('Không thể tải log hoạt động');
     }
@@ -150,7 +158,14 @@ const Admin = () => {
 
   // Tab Log hoạt động người dùng: lấy userList từ /users/only-users
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/users/only-users`).then(res => setUserList(res.data)).catch(() => setUserList([]));
+    axios.get(`${API_BASE_URL}/users/only-users`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then(res => setUserList(res.data)).catch(() => setUserList([]));
+  }, []);
+
+  // Load dữ liệu ban đầu cho tab "Log hoạt động người dùng"
+  useEffect(() => {
+    fetchFilteredLogs();
   }, []);
 
   // Tạo bữa ăn mới
@@ -287,6 +302,8 @@ const Admin = () => {
             return 'Đăng ký hủy ăn';
           case 'uncancel_meal':
             return 'Đăng ký ăn lại';
+          case 'cancel_registration':
+            return 'Hủy đăng ký suất ăn';
           case 'register_meal':
             return 'Đăng ký ăn';
           default:
@@ -427,7 +444,7 @@ const Admin = () => {
           <Table columns={reportColumns} dataSource={report} rowKey={r => r.user._id} size="small" pagination={{ pageSize: 10, responsive: true }} scroll={{ x: true }} />
         </Tabs.TabPane>
         <Tabs.TabPane tab="Log hoạt động" key="4">
-          <Table columns={logColumns} dataSource={logs} rowKey="_id" size="small" pagination={{ pageSize: 10, responsive: true }} scroll={{ x: true }} />
+          <Table columns={logColumns} dataSource={allLogs} rowKey="_id" size="small" pagination={{ pageSize: 10, responsive: true }} scroll={{ x: true }} />
         </Tabs.TabPane>
         <Tabs.TabPane tab="Log hoạt động người dùng" key="5">
           <div style={{ marginBottom: 16 }}>
@@ -467,9 +484,9 @@ const Admin = () => {
             {logMode === 'day' && (
               <DatePicker value={logDate} onChange={setLogDate} style={{ width: 120, marginRight: 8 }} />
             )}
-            <Button type="primary" onClick={fetchLogs}>Lọc</Button>
+            <Button type="primary" onClick={fetchFilteredLogs}>Lọc</Button>
           </div>
-          <Table columns={logColumns} dataSource={logs} rowKey="_id" size="small" pagination={{ pageSize: 10, responsive: true }} scroll={{ x: true }} />
+          <Table columns={logColumns} dataSource={filteredLogs} rowKey="_id" size="small" pagination={{ pageSize: 10, responsive: true }} scroll={{ x: true }} />
         </Tabs.TabPane>
         <Tabs.TabPane tab="Lịch sử xuất báo cáo" key="6">
           <Table 

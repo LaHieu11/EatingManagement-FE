@@ -19,7 +19,10 @@ const ActivityLog = ({ userId }) => {
       if (from) url += `&from=${from.format('YYYY-MM-DD')}`;
       if (to) url += `&to=${to.format('YYYY-MM-DD')}`;
       console.log('Gọi API:', url);
-      axios.get(url)
+      const token = localStorage.getItem('token');
+      axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
         .then(res => {
           console.log('Activity log data:', res.data);
           setLogs(res.data);
@@ -47,6 +50,8 @@ const ActivityLog = ({ userId }) => {
             return 'Đăng ký hủy ăn';
           case 'uncancel_meal':
             return 'Đăng ký ăn lại';
+          case 'cancel_registration':
+            return 'Hủy đăng ký suất ăn';
           case 'register_meal':
             return 'Đăng ký ăn';
           default:
@@ -133,7 +138,9 @@ const Dashboard = () => {
     if (user && user._id) {
       let url = `${API_BASE_URL}/users/activity-log?userId=${user._id}`;
       console.log('Gọi API trực tiếp trong Dashboard:', url);
-      axios.get(url)
+      axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
         .then(res => {
           console.log('Activity log data trực tiếp:', res.data);
         })
