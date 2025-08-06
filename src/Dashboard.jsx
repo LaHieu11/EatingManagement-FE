@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Typography, Table, Tag, Row, Col, Button, message, Modal, DatePicker } from 'antd';
+import { Card, Typography, Table, Tag, Row, Col, Button, message, Modal, DatePicker, Form, Input } from 'antd';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import API_BASE_URL from './config/api';
@@ -84,6 +84,9 @@ const Dashboard = () => {
   const [meals, setMeals] = useState([]);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [changePasswordVisible, setChangePasswordVisible] = useState(false);
+  const [changePasswordLoading, setChangePasswordLoading] = useState(false);
+  const [changePasswordForm] = Form.useForm();
   const token = localStorage.getItem('token');
 
   useEffect(() => {
@@ -280,6 +283,23 @@ const Dashboard = () => {
     });
   };
 
+  // Hàm xử lý đổi mật khẩu
+  const handleChangePassword = async (values) => {
+    setChangePasswordLoading(true);
+    try {
+      await axios.put(`${API_BASE_URL}/users/change-password`, values, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      message.success('Đổi mật khẩu thành công!');
+      setChangePasswordVisible(false);
+      changePasswordForm.resetFields();
+    } catch (err) {
+      message.error(err.response?.data?.message || 'Đổi mật khẩu thất bại');
+    } finally {
+      setChangePasswordLoading(false);
+    }
+  };
+
   // Gom bữa ăn theo ngày
   const groupedMeals = meals.reduce((acc, meal) => {
     const day = dayjs(meal.date).format('DD/MM/YYYY');
@@ -392,6 +412,14 @@ const Dashboard = () => {
               <Text strong>Email:</Text> <Text>{user.email || '-'}</Text><br />
               <Text strong>Giới tính:</Text> <Text>{user.gender === 'male' ? 'Nam' : user.gender === 'female' ? 'Nữ' : 'Khác'}</Text><br />
               <Text strong>Vai trò:</Text> <Text>{user.role === 'admin' ? 'Quản trị viên' : user.role === 'kitchen' ? 'Nhà bếp' : 'Thành viên'}</Text>
+              <br />
+              <Button 
+                type="primary" 
+                style={{ marginTop: 16 }}
+                onClick={() => setChangePasswordVisible(true)}
+              >
+                Đổi mật khẩu
+              </Button>
               <ActivityLog userId={user && user._id} />
             </>
           ) : <Text>Đang tải...</Text>}
@@ -424,6 +452,75 @@ const Dashboard = () => {
           )}
         </Card>
       </Col>
+
+      {/* Modal đổi mật khẩu */}
+      <Modal
+        title="Đổi mật khẩu"
+        open={changePasswordVisible}
+        onCancel={() => {
+          setChangePasswordVisible(false);
+          changePasswordForm.resetFields();
+        }}
+        footer={null}
+        destroyOnClose
+      >
+        <Form
+          form={changePasswordForm}
+          layout="vertical"
+          onFinish={handleChangePassword}
+        >
+          <Form.Item
+            name="oldPassword"
+            label="Mật khẩu cũ"
+            rules={[
+              { required: true, message: 'Vui lòng nhập mật khẩu cũ' }
+            ]}
+          >
+            <Input.Password placeholder="Nhập mật khẩu cũ" />
+          </Form.Item>
+          
+          <Form.Item
+            name="newPassword"
+            label="Mật khẩu mới"
+            rules={[
+              { required: true, message: 'Vui lòng nhập mật khẩu mới' },
+              { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự' }
+            ]}
+          >
+            <Input.Password placeholder="Nhập mật khẩu mới" />
+          </Form.Item>
+          
+          <Form.Item
+            name="confirmPassword"
+            label="Xác nhận mật khẩu mới"
+            dependencies={['newPassword']}
+            rules={[
+              { required: true, message: 'Vui lòng xác nhận mật khẩu mới' },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue('newPassword') === value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error('Mật khẩu xác nhận không khớp'));
+                },
+              }),
+            ]}
+          >
+            <Input.Password placeholder="Nhập lại mật khẩu mới" />
+          </Form.Item>
+          
+          <Form.Item>
+            <Button 
+              type="primary" 
+              htmlType="submit" 
+              loading={changePasswordLoading}
+              block
+            >
+              Đổi mật khẩu
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
     </Row>
   );
 };
