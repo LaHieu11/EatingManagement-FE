@@ -40,6 +40,7 @@ const Admin = () => {
   
   // State cho lịch sử xuất báo cáo
   const [exportHistory, setExportHistory] = useState([]);
+  const [guestHistory, setGuestHistory] = useState([]);
 
   // Lấy danh sách bữa ăn
   const fetchMeals = async () => {
@@ -147,12 +148,41 @@ const Admin = () => {
     }
   };
 
+  // Lấy lịch sử suất ăn ngoài hệ thống
+  const fetchGuestHistory = async () => {
+    setLoading(true);
+    try {
+      // Lấy tất cả bữa ăn trong 30 ngày gần nhất
+      const res = await axios.get(`${API_BASE_URL}/meals/list`, { headers: { Authorization: `Bearer ${token}` } });
+      const meals = res.data || [];
+      let allGuest = [];
+      for (const meal of meals) {
+        const summary = await axios.get(`${API_BASE_URL}/meals/kitchen/summary?date=${meal.date}&type=${meal.type}`, { headers: { Authorization: `Bearer ${token}` } });
+        if (summary.data && summary.data.guestRegs && summary.data.guestRegs.length > 0) {
+          summary.data.guestRegs.forEach(g => {
+            allGuest.push({
+              date: meal.date,
+              type: meal.type,
+              ...g
+            });
+          });
+        }
+      }
+      setGuestHistory(allGuest);
+    } catch (err) {
+      message.error('Không thể tải lịch sử suất ăn ngoài hệ thống');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchMeals();
     fetchAllLogs();
     fetchReport(reportMonth);
     fetchAllUsers();
     fetchExportHistory();
+    fetchGuestHistory();
     // eslint-disable-next-line
   }, []);
 
@@ -319,7 +349,8 @@ const Admin = () => {
   const reportColumns = [
     { title: 'Tên', dataIndex: ['user', 'fullName'], key: 'fullName', render: (v, r) => v || r.user.username },
     { title: 'Email', dataIndex: ['user', 'email'], key: 'email' },
-    { title: 'Số suất ăn', dataIndex: 'count', key: 'count' },
+    { title: 'Số công', dataIndex: 'count', key: 'count' },
+    { title: 'Số suất khách', dataIndex: 'guestTotal', key: 'guestTotal' },
   ];
 
   // Cột cho bảng quản lý người dùng
@@ -497,6 +528,27 @@ const Admin = () => {
             pagination={{ pageSize: 10, responsive: true }} 
             scroll={{ x: true }}
           />
+        </Tabs.TabPane>
+        <Tabs.TabPane tab="Lịch sử suất ăn ngoài hệ thống" key="guest">
+          <Card>
+            <Title level={4}>Lịch sử suất ăn ngoài hệ thống</Title>
+            <Table
+              columns={[
+                { title: 'Ngày', dataIndex: 'date', key: 'date', render: d => dayjs(d).format('DD/MM/YYYY') },
+                { title: 'Bữa', dataIndex: 'type', key: 'type', render: t => t === 'lunch' ? 'Trưa' : 'Tối' },
+                { title: 'Tên khách', dataIndex: 'guestName', key: 'guestName' },
+                { title: 'Số suất', dataIndex: 'guestCount', key: 'guestCount' },
+                { title: 'Người đăng ký', dataIndex: ['guestBy', 'fullName'], key: 'guestBy', render: (v, r) => v || (r.guestBy && r.guestBy.username) },
+                { title: 'Lý do', dataIndex: 'guestReason', key: 'guestReason' },
+              ]}
+              dataSource={guestHistory}
+              rowKey={(r, i) => r.date + '-' + r.type + '-' + r.guestName + '-' + i}
+              loading={loading}
+              size="small"
+              pagination={{ pageSize: 10, responsive: true }}
+              scroll={{ x: true }}
+            />
+          </Card>
         </Tabs.TabPane>
       </Tabs>
 

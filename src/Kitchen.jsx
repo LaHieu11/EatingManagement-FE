@@ -2,8 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Card, Typography, Table, DatePicker, Select, Row, Col, Tag, message } from 'antd';
 import axios from 'axios';
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import API_BASE_URL from './config/api';
 import Report from './Report';
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -78,7 +82,7 @@ const Kitchen = () => {
 
   const mealOptions = meals.map(m => ({
     value: m._id,
-    label: `${dayjs(m.date).format('DD/MM/YYYY HH:mm')} - ${m.type === 'lunch' ? 'Trưa' : 'Tối'}`,
+    label: `${dayjs(m.date).utcOffset(7).format('DD/MM/YYYY HH:mm')} - ${m.type === 'lunch' ? 'Trưa' : 'Tối'}`,
   }));
 
   const selectedMealObj = meals.find(m => m._id === selectedMeal);
@@ -114,7 +118,7 @@ const Kitchen = () => {
       {summary && (
         <Card style={{ marginBottom: 24 }}>
           <Title level={4} style={{ marginBottom: 8 }}>Chi tiết bữa ăn</Title>
-          <div><b>Ngày:</b> {selectedMealObj ? dayjs(selectedMealObj.date).format('DD/MM/YYYY HH:mm') : ''}</div>
+          <div><b>Ngày:</b> {selectedMealObj ? dayjs(selectedMealObj.date).utcOffset(7).format('DD/MM/YYYY HH:mm') : ''}</div>
           <div><b>Bữa:</b> {selectedMealObj ? (selectedMealObj.type === 'lunch' ? 'Trưa' : 'Tối') : ''}</div>
           <div><b>Tổng số người ăn:</b> <Tag color="green">{summary.totalEat}</Tag></div>
           <div><b>Tổng số người hủy:</b> <Tag color="red">{summary.totalCancel}</Tag></div>
@@ -122,17 +126,40 @@ const Kitchen = () => {
             <Col xs={24} md={12}>
               <Title level={5}>Danh sách người ăn</Title>
               <Table
-                columns={[{ title: 'Tên', dataIndex: 'fullName', key: 'fullName', render: (v, r) => v || r.username }, { title: 'Email', dataIndex: 'email', key: 'email' }]}
+                columns={[
+                  { title: 'Tên', dataIndex: 'fullName', key: 'fullName', render: (v, r) => v || r.username },
+                  { title: 'Email', dataIndex: 'email', key: 'email' },
+                ]}
                 dataSource={summary.eaters}
                 rowKey="_id"
                 size="small"
                 pagination={false}
               />
+              {summary.guestRegs && summary.guestRegs.length > 0 && (
+                <>
+                  <Title level={5} style={{ marginTop: 16 }}>Khách được đăng ký ăn</Title>
+                  <Table
+                    columns={[
+                      { title: 'Tên khách', dataIndex: 'guestName', key: 'guestName' },
+                      { title: 'Số suất', dataIndex: 'guestCount', key: 'guestCount' },
+                      { title: 'Người đăng ký', dataIndex: ['guestBy', 'fullName'], key: 'guestBy', render: (v, r) => v || (r.guestBy && r.guestBy.username) },
+                      { title: 'Lý do', dataIndex: 'guestReason', key: 'guestReason' },
+                    ]}
+                    dataSource={summary.guestRegs}
+                    rowKey={(r, i) => r.guestName + '-' + i}
+                    size="small"
+                    pagination={false}
+                  />
+                </>
+              )}
             </Col>
             <Col xs={24} md={12}>
               <Title level={5}>Danh sách người hủy ăn</Title>
               <Table
-                columns={[{ title: 'Tên', dataIndex: 'fullName', key: 'fullName', render: (v, r) => v || r.username }, { title: 'Email', dataIndex: 'email', key: 'email' }]}
+                columns={[
+                  { title: 'Tên', dataIndex: 'fullName', key: 'fullName', render: (v, r) => v || r.username },
+                  { title: 'Email', dataIndex: 'email', key: 'email' },
+                ]}
                 dataSource={summary.cancels}
                 rowKey="_id"
                 size="small"
